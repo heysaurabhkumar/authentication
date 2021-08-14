@@ -47,7 +47,11 @@ router.post("/register", async(req, res) => {
 
 router.post("/edit", verifyToken, async(req, res) => {
     const emailExit = await User.findOne({ email: req.body.email });
-    if (emailExit) return res.status(400).send("Email already exists");
+    if (emailExit) {
+        if (JSON.stringify(emailExit._id) !== JSON.stringify(req.userId)) {
+            return res.status(400).send("Email already exists");
+        }
+    }
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(req.body.password, salt);
@@ -98,7 +102,11 @@ router.get("/profile", verifyToken, (req, res) => {
             console.log(err);
             res.status(401).send("error");
         } else {
-            res.json(user);
+            userResponse = {
+                email: user.email,
+                username: user.username,
+            };
+            res.json(userResponse);
         }
     });
 });
