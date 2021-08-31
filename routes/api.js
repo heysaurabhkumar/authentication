@@ -121,6 +121,7 @@ router.post("/resume", verifyToken, async(req, res) => {
         mobile: req.body.mobile,
         address: req.body.address,
         skills: req.body.skills,
+        profile: req.body.profile,
         linkedin: req.body.linkedin,
         facebook: req.body.facebook,
         instagram: req.body.instagram,

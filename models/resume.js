@@ -10,6 +10,7 @@ const resumeSchema = new Schema({
     mobile: String,
     address: String,
     skills: String,
+    profile: String,
     linkedin: String,
     facebook: String,
     instagram: String,
