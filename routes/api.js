@@ -33,6 +33,7 @@ router.post("/register", async(req, res) => {
         email: req.body.email,
         username: req.body.username,
         password: hashedPassword,
+        isSocial: req.body.isSocial,
     };
     let user = new User(userData);
     user.save((error, registeredUser) => {
@@ -53,16 +54,17 @@ router.post("/edit", verifyToken, async(req, res) => {
             return res.status(400).send("Email already exists");
         }
     }
-
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(req.body.password, salt);
-
     let userData = {
         email: req.body.email,
         username: req.body.username,
-        password: hashedPassword,
     };
 
+    if (req.body.password) {
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(req.body.password, salt);
+
+        userData["password"] = hashedPassword;
+    }
     User.findOneAndUpdate({ _id: req.userId }, userData, (err, user) => {
         if (err) {
             res.status(401).send(err);
@@ -106,6 +108,7 @@ router.get("/profile", verifyToken, (req, res) => {
             userResponse = {
                 email: user.email,
                 username: user.username,
+                isSocial: user.isSocial,
             };
             res.json(userResponse);
         }
