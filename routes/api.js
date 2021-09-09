@@ -4,6 +4,9 @@ const bcrypt = require("bcryptjs");
 const router = express.Router();
 const User = require("../models/user");
 const Resume = require("../models/resume");
+const sgMail = require("@sendgrid/mail");
+
+sgMail.setApiKey(process.env.SG_KEY);
 
 function verifyToken(req, res, next) {
     if (!req.headers.authorization) {
@@ -116,12 +119,31 @@ router.post("/forgot-password", (req, res) => {
                     id: user._id,
                 };
                 const token = jwt.sign(payload, secret, { expiresIn: "15m" });
-                const link = `http://localhost:4200/reset-password/${user._id}/${token}`;
-                // const link = `https://vp-saurabh.herokuapp.com/reset-password/${user._id}/${token}`;
-                console.log(link);
-                res.status(200).send({
-                    message: "Password reset link has been sent to your email.",
-                });
+                // const link = `http://localhost:4200/reset-password/${user._id}/${token}`;
+                const link = `https://vp-saurabh.herokuapp.com/reset-password/${user._id}/${token}`;
+                // console.log(link);
+                const message = {
+                    to: email,
+                    from: "thesaurabh4714@gmail.com",
+                    subject: "Resume Builder Password Reset Link",
+                    text: link,
+                    html: `<h1>Hello from Resume Builder</h1>
+                    <h3>Here's your password reset link: </h3>
+                    ${link} <br>
+                    <p>Note: This link will be valid upto next 15 minutes.</p>
+                    `,
+                };
+
+                sgMail
+                    .send(message)
+                    .then((response) => {
+                        res.status(200).send({
+                            message: "Password reset link has been sent to your email.",
+                        });
+                    })
+                    .catch((error) => {
+                        res.status(400).send(error);
+                    });
             }
         }
     });
