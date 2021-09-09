@@ -99,6 +99,66 @@ router.post("/login", (req, res) => {
     });
 });
 
+router.post("/forgot-password", (req, res) => {
+    const { email } = req.body;
+    User.findOne({ email: email, isSocial: false }, async(error, user) => {
+        if (error) {
+            console.log(error);
+        } else {
+            if (!user) {
+                res.status(401).send({
+                    message: "User not registered",
+                });
+            } else {
+                const secret = process.env.TOKEN_SECERET + user.password;
+                const payload = {
+                    email: user.email,
+                    id: user._id,
+                };
+                const token = jwt.sign(payload, secret, { expiresIn: "15m" });
+                const link = `http://localhost:4200/reset-password/${user._id}/${token}`;
+                // const link = `https://vp-saurabh.herokuapp.com/reset-password/${user._id}/${token}`;
+                console.log(link);
+                res.status(200).send({
+                    message: "Password reset link has been sent to your email.",
+                });
+            }
+        }
+    });
+});
+
+router.post("/reset-password", async(req, res) => {
+    const { id, token, password } = req.body;
+
+    const userExit = await User.findOne({
+        _id: id,
+        isSocial: false,
+    });
+
+    if (JSON.stringify(userExit._id) !== JSON.stringify(id)) {
+        return res.status(400).send("Invalid Id");
+    }
+
+    const secret = process.env.TOKEN_SECERET + userExit.password;
+
+    try {
+        const payload = jwt.verify(token, secret);
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+        User.findOneAndUpdate({ _id: id }, { password: hashedPassword },
+            (err, user) => {
+                if (err) {
+                    res.status(401).send(err);
+                } else {
+                    res.status(200).send({ message: "sucess" });
+                }
+            }
+        );
+    } catch (error) {
+        res.status(400).send(error.message);
+    }
+});
+
 router.get("/profile", verifyToken, (req, res) => {
     User.findOne({ _id: req.userId }, (err, user) => {
         if (err) {
