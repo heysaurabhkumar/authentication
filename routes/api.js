@@ -5,6 +5,11 @@ const router = express.Router();
 const User = require("../models/user");
 const Resume = require("../models/resume");
 const sgMail = require("@sendgrid/mail");
+const { OAuth2Client } = require("google-auth-library");
+
+const client = new OAuth2Client(
+    "823617306530-0b264uv74c5jm32i3lmr9ipmii3hah72.apps.googleusercontent.com"
+);
 
 sgMail.setApiKey(process.env.SG_KEY);
 
@@ -36,7 +41,6 @@ router.post("/register", async(req, res) => {
         email: req.body.email,
         username: req.body.username,
         password: hashedPassword,
-        isSocial: req.body.isSocial,
     };
     let user = new User(userData);
     user.save((error, registeredUser) => {
@@ -100,6 +104,54 @@ router.post("/login", (req, res) => {
             }
         }
     });
+});
+
+router.post("/google", (req, res) => {
+    async function verify() {
+        const ticket = await client.verifyIdToken({
+            idToken: req.body.token,
+            audience: process.env.GOOGLE_KEY,
+        });
+
+        const payload = ticket.getPayload();
+        const userDetails = {
+            email: payload["email"],
+            username: payload["given_name"],
+            password: payload["sub"],
+        };
+        User.findOne({ email: userDetails.email }, async(error, user) => {
+            if (error) {
+                console.log(error);
+            } else {
+                if (!user) {
+                    const salt = await bcrypt.genSalt(10);
+                    const hashedPassword = await bcrypt.hash(userDetails.password, salt);
+
+                    let userData = {
+                        email: userDetails.email,
+                        username: userDetails.username,
+                        password: hashedPassword,
+                    };
+                    let user = new User(userData);
+                    user.save((error, registeredUser) => {
+                        if (error) {
+                            console.log(error);
+                        } else {
+                            let payload = { subject: registeredUser._id };
+                            let token = jwt.sign(payload, process.env.TOKEN_SECERET);
+                            const firstTime = true;
+                            res.status(200).send({ token, firstTime });
+                        }
+                    });
+                } else {
+                    let payload = { subject: user._id };
+                    let token = jwt.sign(payload, process.env.TOKEN_SECERET);
+                    res.status(200).send({ token });
+                }
+            }
+        });
+    }
+    verify().catch(console.error);
 });
 
 router.post("/forgot-password", (req, res) => {
