@@ -156,7 +156,7 @@ router.post("/google", (req, res) => {
 
 router.post("/forgot-password", (req, res) => {
     const { email } = req.body;
-    User.findOne({ email: email, isSocial: false }, async(error, user) => {
+    User.findOne({ email: email }, async(error, user) => {
         if (error) {
             console.log(error);
         } else {
@@ -206,7 +206,6 @@ router.post("/reset-password", async(req, res) => {
 
     const userExit = await User.findOne({
         _id: id,
-        isSocial: false,
     });
 
     if (JSON.stringify(userExit._id) !== JSON.stringify(id)) {
