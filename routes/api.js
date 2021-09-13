@@ -7,9 +7,7 @@ const Resume = require("../models/resume");
 const sgMail = require("@sendgrid/mail");
 const { OAuth2Client } = require("google-auth-library");
 
-const client = new OAuth2Client(
-    "823617306530-0b264uv74c5jm32i3lmr9ipmii3hah72.apps.googleusercontent.com"
-);
+const client = new OAuth2Client(process.env.GOOGLE_KEY);
 
 sgMail.setApiKey(process.env.SG_KEY);
 
